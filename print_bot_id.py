@@ -1,7 +1,7 @@
 import os
+import constants
 from slackclient import SlackClient
 
-os.environ['SLACK_BOT_TOKEN'] = 'xoxb-49975763140-CLCZr0SF5bQU8kL6maPM5KpG'
 BOT_NAME = 'starterbot'
 
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))

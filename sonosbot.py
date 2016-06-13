@@ -1,6 +1,7 @@
 import os
 import time
 import math
+import constants
 from slackclient import SlackClient
 from random import randint
 
@@ -13,9 +14,8 @@ BOT_ID = os.environ.get("BOT_ID")
 print(BOT_ID)
 
 # constants
-os.environ['SLACK_BOT_TOKEN'] = 'xoxb-49975763140-CLCZr0SF5bQU8kL6maPM5KpG'
 AT_BOT = "<@" + BOT_ID + ">:"
-EXAMPLE_COMMAND = "sonos"
+EXAMPLE_COMMAND = "go"
 
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
@@ -43,17 +43,17 @@ APPLICANTS = [
     'Clarissa'
 ]
 
-sonos_lord = APPLICANTS[randint(0,len(APPLICANTS))]
-print sonos_lord
+def new_lord():
+    sonos_lord = APPLICANTS[randint(0,len(APPLICANTS))]
+    return sonos_lord
 
 def handle_command(command, channel):
     """
         Receives commands directed at the bot and determines if they are valid commands. If so, then acts on commands. If not, returns back what it needs for clarification.
     """
-    response = "Not sure what you mean. Use the *" + EXAMPLE_COMMAND + "* command with numbers, delimited by spaces."
+    response = "I literally have only one job. Type *" + EXAMPLE_COMMAND + "* or I won't understand you."
     if command.startswith(EXAMPLE_COMMAND):
-        response = "The Lord of the Sonos is: {} !".format(sonos_lord)
-        sonos_lord = APPLICANTS[randint(0,len(APPLICANTS))]
+        response = "The Lord of the Sonos is: {} !".format(new_lord())
     slack_client.api_call("chat.postMessage", channel=channel, text=response, as_user=True)
 
 
@@ -73,7 +73,7 @@ def parse_slack_output(slack_rtm_output):
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
     if slack_client.rtm_connect():
-        print("StarterBot connected and running!")
+        print("SonosBot connected and running!")
         while True:
             command, channel = parse_slack_output(slack_client.rtm_read())
             if command and channel:
