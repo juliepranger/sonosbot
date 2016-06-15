@@ -4,22 +4,20 @@ import math
 import constants
 from slackclient import SlackClient
 from random import randint
+import random
+from datetime import datetime, timedelta
 
-
-print math
-
-
-# starterbot's ID as an environment variable
 BOT_ID = os.environ.get("BOT_ID")
-print(BOT_ID)
 
 # constants
-AT_BOT = "<@" + BOT_ID + ">:"
+AT_BOT = "<@{bot_id}>:".format(bot_id=str(BOT_ID))
 EXAMPLE_COMMAND = "go"
 
+current_lord = None # Who is the current lord?
+last_selection_time = None
+
 # instantiate Slack & Twilio clients
-slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
-print(os.environ.get('SLACK_BOT_TOKEN'))
+slack_client = SlackClient(constants.SLACK_BOT_TOKEN)
 
 APPLICANTS = [
     'Celina',
@@ -43,24 +41,46 @@ APPLICANTS = [
     'Clarissa'
 ]
 
-def new_lord():
-    sonos_lord = APPLICANTS[randint(0,len(APPLICANTS))]
-    return sonos_lord
+def get_new_lord():
+    # START------
+    # Jules: This is how you locally modify a global value. This is typically not done and is generally frowned upon.
+    # The better option would be to pass whatever you need into the method and store it somewhere around the while loop below
+    # For now, no biggie though
+    global current_lord
+    global last_selection_time
+    # END -------
+
+    msg = "Lord has not changed"
+    if current_lord is None:
+        # Just return random
+        last_selection_time = datetime.now()
+        current_lord = random.choice(APPLICANTS)
+        msg = "New lord has been chosen"
+    else:
+        # Check if enough time has passed
+        current_time = datetime.now()
+        if last_selection_time is not None:
+            if current_time > (last_selection_time + timedelta(hours=24)):
+                current_lord = random.choice(APPLICANTS)
+                msg = "New lord has been chosen"
+        else:
+            msg = "Not enough time has passed; keeping same lord"
+
+    return current_lord, msg
 
 def handle_command(command, channel):
-    """
-        Receives commands directed at the bot and determines if they are valid commands. If so, then acts on commands. If not, returns back what it needs for clarification.
-    """
-    response = "I literally have only one job. Type *" + EXAMPLE_COMMAND + "* or I won't understand you."
+    """ Receives commands directed at the bot and determines if they are valid commands. If so, then acts on commands. If not, returns back what it needs for clarification. """
+
+    # response = "Type *" + EXAMPLE_COMMAND + "* or I won't understand you. You also have to wait %d until you can select a new sonos lord.".format(time_assignment())
     if command.startswith(EXAMPLE_COMMAND):
-        response = "The Lord of the Sonos is: {} !".format(new_lord())
+        name, msg = get_new_lord()
+        response = "The Lord of the Sonos is: {name} ({msg}) !".format(name=name, msg=msg)
     slack_client.api_call("chat.postMessage", channel=channel, text=response, as_user=True)
 
 
 def parse_slack_output(slack_rtm_output):
-    """
-        The Slack Real Time Messaging API is an events firehose. This parsing function returns None unless a message is directed at the Bot, based on its ID.
-    """
+    """ The Slack Real Time Messaging API is an events firehose. This parsing function returns None unless a message is directed at the Bot, based on its ID. """
+
     output_list = slack_rtm_output
     if output_list and len(output_list) > 0:
         for output in output_list:
@@ -76,6 +96,7 @@ if __name__ == "__main__":
         print("SonosBot connected and running!")
         while True:
             command, channel = parse_slack_output(slack_client.rtm_read())
+            print command, channel
             if command and channel:
                 handle_command(command, channel)
             time.sleep(READ_WEBSOCKET_DELAY)
